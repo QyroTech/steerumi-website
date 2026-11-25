@@ -1,0 +1,28 @@
+---
+import type { Project } from "../data/project";
+import { withBase } from "../lib/urls";
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+---
+
+<header id="top" class="hero section-shell">
+  <h1>{project.title}</h1>
+  <div class="resource-links" aria-label="Project resources">
+    {
+      project.resources.map((link) =>
+        link.url ? (
+          <a class="resource-button" href={withBase(link.url)}>
+            {link.label}
+            {!link.url.startsWith("#") && <span aria-hidden="true"> ↗</span>}
+          </a>
+        ) : (
+          <span class="resource-button unavailable" aria-disabled="true">
+            {link.label}
+          </span>
+        ),
+      )
+    }
+  </div>
+</header>

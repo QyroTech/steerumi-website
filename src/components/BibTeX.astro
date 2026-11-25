@@ -1,0 +1,47 @@
+---
+import type { Project } from "../data/project";
+interface Props {
+  citation: Project["citation"];
+  showDraft?: boolean;
+}
+const { citation, showDraft = false } = Astro.props;
+const bibtex = citation.bibtex.trim();
+const hasCitation = bibtex.length > 0;
+---
+
+{citation.isDraft && <span data-publication-blocker="citation-draft" hidden />}
+{
+  (!citation.isDraft || showDraft) && (
+    <section id="citation" class="page-section citation-section" aria-labelledby="citation-label">
+      <div class="reading-shell">
+        <div class="section-heading">
+          <p id="citation-label" class="eyebrow">04 / Citation</p>
+        </div>
+        {hasCitation && (
+          <div class="citation-code">
+            <div class="citation-toolbar">
+              <span>BibTeX</span>
+              <button
+                class="small-button secondary"
+                type="button"
+                data-copy-citation
+                aria-describedby="copy-status"
+              >
+                Copy citation
+              </button>
+            </div>
+            <pre tabindex="0"><code id="bibtex-content">{bibtex}</code></pre>
+          </div>
+        )}
+        {hasCitation && (
+          <p
+            id="copy-status"
+            class="copy-status"
+            role="status"
+            aria-live="polite"
+          />
+        )}
+      </div>
+    </section>
+  )
+}

@@ -1,0 +1,201 @@
+---
+import type { Project } from "../data/project";
+import SectionHeading from "./SectionHeading.astro";
+import ProjectFigure from "./ProjectFigure.astro";
+import RobotDemonstrations from "./RobotDemonstrations.astro";
+import TaskProgressCurves from "./TaskProgressCurves.astro";
+
+interface Props {
+  results: Project["results"];
+  demonstrations: Project["demonstrations"];
+}
+
+const { results, demonstrations } = Astro.props;
+const arPairs = results.ablations
+  .filter((row) => row.withAR)
+  .flatMap((withAR) => {
+    const withoutAR = results.ablations.find(
+      (row) => row.task === withAR.task && !row.withAR,
+    );
+    return withoutAR ? [{ withAR, withoutAR }] : [];
+  });
+---
+
+<section id="results" class="page-section results-section">
+  <div class="section-shell">
+    <SectionHeading
+      label="03 / Experiments"
+      title={results.title}
+    />
+    <RobotDemonstrations demonstrations={demonstrations} />
+
+    <section
+      id="main-experiment"
+      class="experiment-block"
+      aria-labelledby="main-experiment-heading"
+    >
+      <h3 id="main-experiment-heading">
+        Experiment 1: SteerUMI vs. conventional UMI
+      </h3>
+      <TaskProgressCurves
+        figure={results.progressFigure}
+        meanRelativeGain={results.meanRelativeGain}
+      />
+      <div class="results-details">
+        <h4 id="final-tps-heading">Final-round TPS data</h4>
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-labelledby="final-tps-heading"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Task</th>
+                <th scope="col">Rounds</th>
+                <th scope="col">Conventional UMI</th>
+                <th scope="col">SteerUMI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                results.finalScores.map((row) => (
+                  <tr>
+                    <th scope="row">{row.task}</th>
+                    <td>{row.rounds}</td>
+                    <td>{row.conventional}</td>
+                    <td><strong>{row.steerumi}</strong></td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="repeatability"
+      class="experiment-block"
+      aria-labelledby="repeatability-heading"
+    >
+      <h3 id="repeatability-heading">
+        Experiment 2: Repeatability across two independent runs
+      </h3>
+      <div class="experiment-split repeatability-layout">
+        <ProjectFigure
+          figure={results.repeatabilityFigure}
+          showCaption={false}
+        />
+        <div class="experiment-copy repeatability-copy">
+          <p>
+            Both runs start from the same stack-cubes base policy and each
+            completes four post-training rounds, with independently collected
+            DAgger demonstrations at every round.
+          </p>
+          <p>
+            <strong>Both runs improve over the base policy and follow similar learning curves.</strong>
+            The shaded area is the range of the two runs, not a confidence interval.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="hg-dagger-comparison"
+      class="experiment-block"
+      aria-labelledby="hg-dagger-heading"
+    >
+      <h3 id="hg-dagger-heading">
+        Experiment 3: Comparison with real-robot HG-DAgger
+      </h3>
+      <div class="experiment-split hg-dagger-layout">
+        <div class="results-comparison">
+          <ProjectFigure
+            figure={results.comparisonFigure}
+            showCaption={false}
+            sizes="(max-width: 592px) calc(100vw - 32px), 560px"
+          />
+        </div>
+        <div class="experiment-copy">
+          <p>
+            Compared with real-robot HG-DAgger on stack cubes, SteerUMI narrows
+            the gap to <strong>3.0 TPS points</strong> by the third round and
+            reduces data collection time per training episode by <strong>33.3%</strong>.
+          </p>
+          <div>
+            <h4>Collection time per round</h4>
+            <p class="results-context">
+              One UMI device vs. one robot · 100 training episodes per round,
+              excluding setup time
+            </p>
+            <dl class="results-time-list">
+              {
+                results.collectionTimes.map(({ method, minutes, ours }) => (
+                  <div>
+                    <dt>{method}</dt>
+                    <dd class:list={[ours && "results-emphasis"]}>
+                      ≈{minutes} min
+                    </dd>
+                  </div>
+                ))
+              }
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="ar-ablation"
+      class="experiment-block"
+      aria-labelledby="ar-summary-heading"
+    >
+      <h3 id="ar-summary-heading">Experiment 4: AR guidance ablation</h3>
+      <p class="experiment-intro">
+        Both settings keep the same OOD detector, starting model, and
+        training-episode quota for each task. With AR off, operators do not see
+        predicted trajectories or OOD markers and use their own judgment to
+        correct the task.
+      </p>
+      <p class="results-context">
+        Starting model and results after one post-training round · SR = success
+        rate; TPS on a 0–100 scale
+      </p>
+      <table
+        id="ar-ablation-table"
+        class="results-ar-summary"
+        aria-label="AR guidance ablation results"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Task</th>
+            <th scope="col">Starting model</th>
+            <th scope="col">OOD only <span>(AR off)</span></th>
+            <th scope="col">OOD + AR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            arPairs.map(({ withAR, withoutAR }) => (
+              <tr>
+                <th scope="row">{withAR.task}</th>
+                <td>
+                  <span>{withAR.startSR}% SR</span>
+                  <span class="ar-tps">{withAR.startTPS} TPS</span>
+                </td>
+                {[withoutAR, withAR].map((row) => (
+                  <td>
+                    {row.withAR ? <strong>{row.afterSR}% SR</strong> : <span>{row.afterSR}% SR</span>}
+                    <span class="ar-tps">{row.afterTPS} TPS</span>
+                  </td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </section>
+  </div>
+</section>

@@ -1,0 +1,213 @@
+---
+import type { VideoGroup } from "../data/project";
+import { withBase } from "../lib/urls";
+interface Props {
+  id: string;
+  groups: VideoGroup[];
+  layout?: "grid" | "tasks" | "task-grid";
+}
+const { id, groups, layout = "grid" } = Astro.props;
+const taskLayout = layout === "tasks";
+const recordingGrid = layout === "task-grid";
+const selectable = taskLayout;
+const availableGroups = groups
+  .map((group) => ({
+    ...group,
+    pendingPoster: group.videos.find((video) => !video.src)?.poster,
+    videos: group.videos.filter((video) => video.src),
+  }))
+  .filter((group) => recordingGrid || group.videos.length);
+---
+
+{
+  availableGroups.length > 0 && (
+    <div
+      class:list={[
+        "video-gallery",
+        { "task-gallery": taskLayout, "recording-grid": recordingGrid },
+      ]}
+      data-video-gallery
+      data-task-gallery={taskLayout || undefined}
+      data-recording-gallery={recordingGrid || undefined}
+      id={id}
+    >
+      {taskLayout && (
+        <div
+          class="task-tabs"
+          data-task-list
+          aria-label="Manipulation tasks"
+          hidden
+        >
+          {availableGroups.map((group) => (
+            <button
+              class="task-tab"
+              type="button"
+              data-task-button
+              id={`${id}-${group.id}-tab`}
+              aria-controls={`${id}-${group.id}-panel`}
+            >
+              {group.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {availableGroups.map((group) => (
+        <section
+          class:list={[
+            "video-group",
+            {
+              "task-panel": taskLayout,
+              "task-panel-single": taskLayout && group.videos.length === 1,
+              "recording-panel": recordingGrid,
+            },
+          ]}
+          id={`${id}-${group.id}-panel`}
+          data-video-group
+          data-task-panel={taskLayout || undefined}
+          data-recording-panel={recordingGrid || undefined}
+          data-sync={String(group.sync && !selectable)}
+          aria-labelledby={`${id}-${group.id}-title`}
+        >
+          <div class="video-group-heading">
+            <div>
+              <h3 id={`${id}-${group.id}-title`}>{group.label}</h3>
+              {group.description && <p>{group.description}</p>}
+            </div>
+          </div>
+          {selectable && group.videos.length > 1 && (
+            <div
+              class="clip-picker"
+              data-clip-list
+              role="group"
+              aria-label={`${group.label} recordings`}
+              hidden
+            >
+              {group.videos.map((video, index) => (
+                <button
+                  class="clip-choice"
+                  type="button"
+                  aria-label={video.label}
+                  data-clip-button
+                  data-clip={video.id}
+                  aria-controls={`${id}-${video.id}-frame`}
+                  aria-pressed="false"
+                >
+                  {video.poster && !recordingGrid && (
+                    <img
+                      src={withBase(video.poster)}
+                      alt=""
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                  <span>{recordingGrid ? index + 1 : video.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div
+            class:list={[
+              "video-grid",
+              `video-grid-${group.columns}`,
+              { "task-stage": taskLayout, "recording-stage": recordingGrid },
+            ]}
+          >
+            {recordingGrid && !group.videos.length && (
+              <figure class="recording-pending" data-recording-pending>
+                {group.pendingPoster && (
+                  <img
+                    src={withBase(group.pendingPoster)}
+                    alt={`${group.label} UMI collection, still image`}
+                    loading="lazy"
+                    width="480"
+                    height="640"
+                  />
+                )}
+                <figcaption>Photo · video pending</figcaption>
+              </figure>
+            )}
+            {group.videos.map((video) => (
+              <figure
+                class="video-item"
+                id={selectable ? `${id}-${video.id}-frame` : undefined}
+                data-clip-frame={selectable || undefined}
+                data-clip-id={selectable ? video.id : undefined}
+              >
+                <video
+                  data-demo-video
+                  data-src={withBase(video.src!)}
+                  data-poster={video.poster && withBase(video.poster)}
+                  id={`${id}-${video.id}`}
+                  aria-label={
+                    selectable || recordingGrid
+                      ? `${group.label} — ${video.label}`
+                      : video.label
+                  }
+                  style={
+                    video.aspectRatio && `aspect-ratio: ${video.aspectRatio}`
+                  }
+                  controls
+                  muted
+                  loop={video.loop ?? true}
+                  playsinline
+                  preload="none"
+                />
+                <noscript>
+                  <a class="video-fallback" href={withBase(video.src!)}>
+                    {video.poster && (
+                      <img
+                        src={withBase(video.poster)}
+                        alt=""
+                        width="640"
+                        height={video.aspectRatio === "1 / 1" ? 640 : 360}
+                        loading="lazy"
+                      />
+                    )}
+                    <span>
+                      {selectable || recordingGrid
+                        ? `${group.label} — ${video.label}`
+                        : video.label}{" "}
+                      ↗
+                    </span>
+                  </a>
+                </noscript>
+                {video.caption ? (
+                  <figcaption class="video-caption">
+                    {video.caption.split(/(\*\*[^*]+\*\*)/g).map((segment, index) =>
+                      index % 2 === 0 ? segment : <strong>{segment.slice(2, -2)}</strong>,
+                    )}
+                  </figcaption>
+                ) : recordingGrid && video.source !== "robot" ? (
+                  <figcaption>UMI collection</figcaption>
+                ) : recordingGrid && video.speedUp ? (
+                  <figcaption>
+                    {video.speedUp}×
+                  </figcaption>
+                ) : !selectable && group.videos.length > 1 ? (
+                  <figcaption>{video.label}</figcaption>
+                ) : null}
+              </figure>
+            ))}
+          </div>
+          {group.sync && !selectable && (
+            <button
+              class="small-button secondary sync-button"
+              type="button"
+              data-sync-play
+            >
+              Play synchronized views
+            </button>
+          )}
+        </section>
+      ))}
+      <p
+        class="playback-status"
+        data-playback-status
+        role="status"
+        aria-live="polite"
+      />
+    </div>
+  )
+}

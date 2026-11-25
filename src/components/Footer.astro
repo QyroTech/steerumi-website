@@ -1,0 +1,43 @@
+---
+import type { Project } from "../data/project";
+import { withBase } from "../lib/urls";
+interface Props {
+  name: string;
+  footer: Project["footer"];
+}
+const { name, footer } = Astro.props;
+---
+
+<footer class="project-footer">
+  <div class="section-shell">
+    <div class="footer-top">
+      <strong>{footer.team ?? name}</strong><a href="#top">Back to top ↑</a>
+    </div>
+    {
+      footer.contact && (
+        <p>
+          <a href={`mailto:${footer.contact}`}>{footer.contact}</a>
+        </p>
+      )
+    }
+    {
+      footer.repository && (
+        <p>
+          <a href={withBase(footer.repository)}>GitHub repository ↗</a>
+        </p>
+      )
+    }
+    {
+      footer.acknowledgment && (
+        <p class="footer-note">{footer.acknowledgment}</p>
+      )
+    }
+    {footer.copyright && <p class="footer-note">{footer.copyright}</p>}
+    <p class="footer-credit">
+      Template: Roman Hauksson-Neill’s Academic Project Page Template · CC BY-SA
+      4.0. Design inspired by <a href="https://shikun.io/projects/clarity"
+        >Clarity</a
+      >.
+    </p>
+  </div>
+</footer>

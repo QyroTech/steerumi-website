@@ -1,0 +1,60 @@
+---
+import { Picture } from "astro:assets";
+import type { ResearchFigure } from "../data/project";
+import { withBase } from "../lib/urls";
+interface Props {
+  figure: ResearchFigure;
+  priority?: boolean;
+  showCaption?: boolean;
+  sizes?: string;
+}
+const {
+  figure,
+  priority = false,
+  showCaption = true,
+  sizes = "(max-width: 720px) calc(100vw - 32px), (max-width: 1200px) calc(100vw - 64px), 1120px",
+} = Astro.props;
+const fullSrc = figure.image
+  ? withBase(typeof figure.image === "string" ? figure.image : figure.image.src)
+  : undefined;
+const dimensions = typeof figure.image === "object" ? figure.image : figure;
+const webpSource =
+  typeof figure.image === "object" && figure.image.format === "webp";
+---
+
+{
+  figure.image && (
+    <figure class="research-figure">
+      <a
+        class="figure-open"
+        href={fullSrc}
+        data-lightbox
+        data-caption={figure.caption}
+        aria-label={`View full-size figure: ${figure.alt}`}
+      >
+        {typeof figure.image === "string" || import.meta.env.DEV ? (
+          <img
+            src={fullSrc}
+            alt={figure.alt}
+            width={dimensions.width ?? 1600}
+            height={dimensions.height ?? 900}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+          />
+        ) : (
+          <Picture
+            src={figure.image}
+            alt={figure.alt}
+            formats={webpSource ? ["avif"] : ["avif", "webp"]}
+            fallbackFormat={webpSource ? "webp" : undefined}
+            widths={[640, 960, 1280, 1600, 2200]}
+            sizes={sizes}
+            loading={priority ? "eager" : "lazy"}
+            priority={priority}
+          />
+        )}
+      </a>
+      {showCaption && <figcaption>{figure.caption}</figcaption>}
+    </figure>
+  )
+}

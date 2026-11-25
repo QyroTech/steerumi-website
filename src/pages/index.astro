@@ -1,0 +1,31 @@
+---
+import { project } from "../data/project";
+import Layout from "../layouts/Layout.astro";
+import Navigation from "../components/Navigation.astro";
+import Hero from "../components/Hero.astro";
+import Teaser from "../components/Teaser.astro";
+import Abstract from "../components/Abstract.astro";
+import UmiCollection from "../components/UmiCollection.astro";
+import Workflow from "../components/Workflow.astro";
+import Results from "../components/Results.astro";
+import BibTeX from "../components/BibTeX.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<Layout project={project}>
+  <Navigation name={project.name} items={project.navigation} />
+  <main id="main-content">
+    <Hero project={project} />
+    <Teaser teaser={project.teaser} />
+    <Abstract text={project.abstract} />
+    <UmiCollection
+      collection={project.umiCollection}
+      dataset={project.dataset}
+      groups={project.demonstrations.groups}
+    />
+    <Workflow workflow={project.workflow} />
+    <Results results={project.results} demonstrations={project.demonstrations} />
+    <BibTeX citation={project.citation} showDraft />
+  </main>
+  <Footer name={project.name} footer={project.footer} />
+</Layout>

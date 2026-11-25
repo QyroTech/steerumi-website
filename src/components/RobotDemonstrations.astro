@@ -1,0 +1,235 @@
+---
+import { Icon } from "astro-icon/components";
+import type { Project } from "../data/project";
+import { withBase } from "../lib/urls";
+
+interface Props {
+  demonstrations: Project["demonstrations"];
+}
+const { demonstrations } = Astro.props;
+const tasks = demonstrations.groups.flatMap(({ id, label, videos }) => {
+  const video = videos.find((item) => item.source === "robot" && item.src);
+  return video?.src
+    ? [
+        {
+          id,
+          label,
+          src: withBase(video.src),
+          poster: video.poster && withBase(video.poster),
+          speedLabel: video.speedUp ? `${video.speedUp}×` : undefined,
+        },
+      ]
+    : [];
+});
+---
+
+{
+  tasks.length > 0 && (
+    <section id="demonstrations" aria-labelledby="robot-tests-heading">
+      <h3 id="robot-tests-heading">Real-robot tests</h3>
+      <div id="robot-demonstrations" class="robot-grid" data-video-gallery>
+        {tasks.map(({ id, label, src, poster, speedLabel }) => (
+          <figure
+            id={`robot-demonstrations-${id}-panel`}
+            class="robot-card"
+            data-video-group
+            data-sync="false"
+          >
+            <h4 class="robot-task-title">{label}</h4>
+            <div class="robot-frame">
+              <video
+                id={`robot-demonstrations-${id}-robot`}
+                class="robot-player"
+                data-demo-video
+                poster={poster}
+                aria-label={speedLabel ? `${label} — ${speedLabel} speed` : label}
+                controls
+                muted
+                loop
+                playsinline
+                preload="none"
+                hidden
+              />
+              <a
+                class="robot-cover"
+                data-robot-play
+                href={src}
+                aria-label={`Play ${label}${speedLabel ? ` at ${speedLabel} speed` : ""}`}
+              >
+                {poster && (
+                  <img
+                    src={poster}
+                    alt=""
+                    width="640"
+                    height="480"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span class="robot-play-label">
+                  <Icon
+                    name="ri:play-fill"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                  />
+                  Play
+                </span>
+              </a>
+              {speedLabel && (
+                <span class="robot-speed" aria-hidden="true" hidden>{speedLabel}</span>
+              )}
+            </div>
+          </figure>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<script>
+  const gallery = document.getElementById("robot-demonstrations");
+  if (gallery) {
+    const videos = [...gallery.querySelectorAll("video")];
+    for (const video of videos) {
+      const cover =
+        video.parentElement?.querySelector<HTMLAnchorElement>(
+          "[data-robot-play]",
+        );
+      if (!cover) continue;
+      const speed = video.parentElement?.querySelector<HTMLElement>(".robot-speed");
+      if (speed) {
+        let hasPlayed = false;
+        const updateSpeed = () => {
+          speed.hidden = !hasPlayed || video.currentTime >= 3;
+        };
+        video.addEventListener("playing", () => {
+          hasPlayed = true;
+          updateSpeed();
+        });
+        for (const event of ["timeupdate", "seeking", "seeked"]) {
+          video.addEventListener(event, updateSpeed);
+        }
+      }
+      cover.addEventListener("click", (event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        )
+          return;
+        event.preventDefault();
+        video.src = cover.href;
+        video.hidden = false;
+        video.focus({ preventScroll: true });
+        void video.play().catch(() => {
+          // Keep the native controls available if playback is blocked.
+        });
+      });
+      video.addEventListener("play", () => {
+        for (const other of videos) {
+          if (other !== video && !other.paused) other.pause();
+        }
+      });
+    }
+  }
+</script>
+
+<style>
+  .robot-grid {
+    display: grid;
+    margin-top: 16px;
+    grid-template-columns: repeat(5, minmax(108px, 1fr));
+    column-gap: clamp(12px, 1.8vw, 24px);
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .robot-card {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    min-width: 0;
+  }
+  .robot-card .robot-task-title {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .robot-frame {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    background: #101826;
+  }
+  .robot-cover,
+  .robot-player {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+  .robot-cover img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+  .robot-frame :is(.robot-cover, .robot-player):focus-visible {
+    outline-offset: -4px;
+  }
+  .robot-player {
+    background: #101826;
+    object-fit: contain;
+  }
+  .robot-play-label,
+  .robot-speed {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    background: #101826;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .robot-play-label {
+    inset: auto auto 9px 9px;
+  }
+  .robot-speed {
+    inset: 9px 9px auto auto;
+    pointer-events: none;
+    background: rgb(16 24 38 / 32%);
+    color: rgb(255 255 255 / 88%);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .robot-cover:is(:hover, :focus-visible) .robot-play-label {
+    background: var(--page-button);
+  }
+  @media screen {
+    .robot-player:not([hidden]) + .robot-cover {
+      display: none;
+    }
+  }
+  @media print {
+    .robot-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      overflow: visible;
+      padding: 0;
+    }
+    .robot-card {
+      break-inside: avoid;
+    }
+    .robot-player,
+    .robot-play-label {
+      display: none;
+    }
+  }
+</style>

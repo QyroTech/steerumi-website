@@ -1,0 +1,460 @@
+---
+import { Icon } from "astro-icon/components";
+import type { Project } from "../data/project";
+import { withBase } from "../lib/urls";
+import ProjectFigure from "./ProjectFigure.astro";
+import SectionHeading from "./SectionHeading.astro";
+
+interface Props {
+  collection: Project["umiCollection"];
+  dataset: Project["dataset"];
+  groups: Project["demonstrations"]["groups"];
+}
+
+const { collection, dataset, groups } = Astro.props;
+const photoGroups = new Map(
+  dataset.photoGroups.map(({ id, photos }) => [id, photos]),
+);
+const formatDuration = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+const tasks = groups.flatMap(({ id, label, videos }) => {
+  const recordings = videos.flatMap((video) =>
+    video.src && video.source !== "robot"
+      ? [
+          {
+            label: video.label,
+            src: withBase(video.src),
+            poster: video.poster && withBase(video.poster),
+            duration:
+              video.durationSeconds !== undefined
+                ? formatDuration(video.durationSeconds)
+                : "",
+          },
+        ]
+      : [],
+  );
+  const first = recordings[0];
+  return first
+    ? [{ id, label, first, recordings, photos: photoGroups.get(id) }]
+    : [];
+});
+---
+
+{
+  tasks.length > 0 && (
+    <section id="umi-collection" class="page-section umi-collection-section">
+      <div class="section-shell">
+        <SectionHeading label="01 / SteerUMI Collection" title={collection.title} />
+        <p class="umi-scroll-hint">Scroll sideways to see all five tasks and their videos.</p>
+      </div>
+      <div
+        class="section-shell umi-aligned-media"
+        role="region"
+        aria-label="Collection overview and corresponding recordings"
+        tabindex="0"
+      >
+        <div class="umi-aligned-track">
+          <div class="umi-collection-overview">
+            <ProjectFigure
+              figure={collection.figure}
+              showCaption={false}
+              sizes="(max-width: 964px) 900px, (max-width: 1280px) calc(100vw - 64px), 1216px"
+            />
+          </div>
+          <div class="umi-gallery" data-umi-gallery data-video-gallery>
+            {tasks.map(({ id, label, first, recordings, photos }) => (
+              <article
+                id={`umi-collection-${id}-card`}
+                class="umi-card"
+                data-video-group
+                data-sync="false"
+                aria-labelledby={`umi-task-${id}`}
+              >
+                <h3 id={`umi-task-${id}`}>{label}</h3>
+                <div class="umi-recordings">
+                  <div class="umi-media">
+                    <video
+                      id={`umi-collection-${id}-player`}
+                      data-demo-video
+                      poster={first.poster}
+                      aria-label={`${label} — ${first.label}`}
+                      controls
+                      muted
+                      loop
+                      playsinline
+                      preload="none"
+                      hidden
+                    />
+                    <a
+                      class="umi-cover"
+                      data-umi-play
+                      href={first.src}
+                      aria-label={`Play ${label}, ${first.label}`}
+                    >
+                      <img
+                        src={first.poster}
+                        hidden={!first.poster}
+                        alt=""
+                        width="720"
+                        height="720"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <span class="umi-play-label">
+                        <Icon
+                          name="ri:play-fill"
+                          width="16"
+                          height="16"
+                          aria-hidden="true"
+                        />
+                        Play
+                      </span>
+                    </a>
+                  </div>
+                  <p class="umi-recording-caption" aria-live="polite">
+                    <strong data-umi-label>{first.label}</strong>
+                    <span data-umi-duration hidden={!first.duration}>
+                      {" "}
+                      · {first.duration}
+                    </span>
+                  </p>
+                  <div
+                    class="umi-takes"
+                    role="group"
+                    aria-label={`${label} recordings`}
+                  >
+                    {recordings.map((recording, index) => (
+                      <a
+                        class="umi-take"
+                        href={recording.src}
+                        data-umi-take={recording.label}
+                        data-poster={recording.poster}
+                        data-duration={recording.duration}
+                        aria-label={`${label}: ${recording.label}`}
+                        aria-controls={`umi-collection-${id}-player`}
+                        aria-current={index === 0 ? "true" : undefined}
+                      >
+                        {index + 1}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                {photos && (
+                  <div class="umi-photos">
+                    <h4>Parallel UMI collection</h4>
+                    <div class="umi-photo-grid">
+                      {photos.map((photo) => (
+                        <ProjectFigure figure={photo} showCaption={false} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div class="section-shell umi-description">
+        {collection.topics.map(({ id, title, text }) => (
+          <section class="umi-topic" data-topic={id}>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </section>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<script>
+  function followsLink(event: MouseEvent) {
+    return (
+      event.button === 0 &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey
+    );
+  }
+
+  for (const gallery of document.querySelectorAll<HTMLElement>(
+    "[data-umi-gallery]",
+  )) {
+    const videos = [...gallery.querySelectorAll("video")];
+    for (const card of gallery.querySelectorAll<HTMLElement>(".umi-card")) {
+      const heading = card.querySelector("h3");
+      const video = card.querySelector("video");
+      const cover = card.querySelector<HTMLAnchorElement>("[data-umi-play]");
+      const image = cover?.querySelector("img");
+      const label = card.querySelector<HTMLElement>("[data-umi-label]");
+      const duration = card.querySelector<HTMLElement>("[data-umi-duration]");
+      if (!heading || !video || !cover || !image || !label || !duration)
+        continue;
+      const task = heading.textContent?.trim() ?? "";
+      const choices = [
+        ...card.querySelectorAll<HTMLAnchorElement>("[data-umi-take]"),
+      ];
+
+      for (const choice of choices) {
+        choice.addEventListener("click", (event) => {
+          if (!followsLink(event)) return;
+          event.preventDefault();
+          if (choice.getAttribute("aria-current") === "true") return;
+
+          if (video.hasAttribute("src")) {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+          }
+          video.hidden = true;
+          cover.hidden = false;
+          cover.href = choice.href;
+          const recording = choice.dataset.umiTake ?? "";
+          const poster = choice.dataset.poster;
+          if (poster) {
+            image.src = poster;
+            video.poster = poster;
+          } else {
+            image.removeAttribute("src");
+            video.removeAttribute("poster");
+          }
+          image.hidden = !poster;
+          label.textContent = recording;
+          duration.textContent = choice.dataset.duration
+            ? ` · ${choice.dataset.duration}`
+            : "";
+          duration.hidden = !choice.dataset.duration;
+          cover.setAttribute("aria-label", `Play ${task}, ${recording}`);
+          video.setAttribute("aria-label", `${task} — ${recording}`);
+          for (const link of choices) link.removeAttribute("aria-current");
+          choice.setAttribute("aria-current", "true");
+        });
+      }
+      cover.addEventListener("click", (event) => {
+        if (!followsLink(event)) return;
+        event.preventDefault();
+        video.src = cover.href;
+        cover.hidden = true;
+        video.hidden = false;
+        video.focus({ preventScroll: true });
+        void video.play().catch(() => {
+          // Native controls remain available if playback does not start.
+        });
+      });
+      video.addEventListener("play", () => {
+        for (const other of videos) {
+          if (other !== video && !other.paused) other.pause();
+        }
+      });
+    }
+  }
+</script>
+
+<style>
+  .umi-scroll-hint {
+    display: none;
+    margin-block: -16px 8px;
+    color: var(--page-secondary);
+    font-size: 0.85rem;
+  }
+  .umi-collection-section .umi-aligned-media {
+    width: min(calc(var(--page-wide) + 96px), calc(100% - 64px));
+    overflow-x: auto;
+    padding-block: 4px;
+  }
+  .umi-aligned-track {
+    min-width: 900px;
+    padding: clamp(6px, 0.85vw, 12px);
+    border: 1px solid var(--page-line);
+    border-radius: 8px;
+    background: var(--page-raised);
+  }
+  .umi-collection-overview {
+    margin-bottom: 4px;
+  }
+  .umi-collection-overview :global(.research-figure) {
+    margin: 0;
+  }
+  .umi-collection-overview :global(.figure-open) {
+    overflow: hidden;
+    background: #fff;
+  }
+  .umi-gallery {
+    display: grid;
+    /* The image is cropped to the panels' edges; its gutters are 17.5 / 3441. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: calc(100% * 17.5 / 3441);
+  }
+  .umi-card {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 8px;
+    min-width: 0;
+    padding: clamp(7px, 1.3vw, 12px);
+    border: 1px solid var(--page-line);
+    border-radius: 8px;
+    background: var(--page-soft);
+  }
+  .umi-card h3,
+  .umi-card h4 {
+    margin: 0;
+    color: var(--page-ink);
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .umi-recordings {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+  }
+  .umi-media {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    background: #101826;
+  }
+  .umi-cover,
+  .umi-media video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+  .umi-cover img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+  .umi-media video {
+    background: #101826;
+    object-fit: contain;
+  }
+  .umi-play-label {
+    position: absolute;
+    inset: auto auto 7px 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: #101826;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .umi-cover:is(:hover, :focus-visible) .umi-play-label {
+    background: var(--page-button);
+  }
+  .umi-recording-caption {
+    color: var(--page-secondary);
+    font-size: 0.77rem;
+    line-height: 1.35;
+  }
+  .umi-recording-caption strong {
+    font-weight: 600;
+  }
+  .umi-takes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    width: min(100%, 132px);
+  }
+  .umi-take {
+    display: grid;
+    place-items: center;
+    min-height: 34px;
+    border: 1px solid var(--page-line);
+    border-radius: 5px;
+    background: var(--page-bg);
+    color: var(--page-secondary);
+    font-size: 0.8rem;
+    font-weight: 650;
+  }
+  .umi-take[aria-current="true"],
+  .umi-take:hover {
+    border-color: var(--page-accent);
+    background: var(--page-surface);
+    color: var(--page-accent);
+    text-decoration: none;
+  }
+  .umi-photos {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding-top: 7px;
+    border-top: 1px solid var(--page-line);
+  }
+  .umi-card h4 {
+    font-size: 0.77rem;
+  }
+  .umi-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .umi-photo-grid :global(.research-figure) {
+    margin: 0;
+  }
+  .umi-photo-grid :global(.figure-open img) {
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    aspect-ratio: 3 / 2;
+    border-radius: 4px;
+    object-fit: cover;
+    object-position: center 58%;
+  }
+  .umi-description {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px 24px;
+    margin-top: clamp(16px, 2vw, 24px);
+    color: var(--page-secondary);
+    font-size: clamp(1rem, 1.2vw, 1.0625rem);
+    line-height: 1.6;
+  }
+  .umi-topic {
+    min-width: 0;
+    padding-top: 9px;
+    border-top: 1px solid var(--page-line);
+  }
+  .umi-topic h3 {
+    margin-bottom: 6px;
+    color: var(--umi-topic-accent, var(--page-ink));
+    font-size: clamp(1.25rem, 1.6vw, 1.375rem);
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .umi-topic[data-topic="ood"] {
+    --umi-topic-accent: light-dark(#9a4e0a, #ffc278);
+  }
+  .umi-topic[data-topic="ar"] {
+    --umi-topic-accent: light-dark(#127567, #79ded0);
+  }
+  @media (width > 720px) {
+    .umi-description {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (width < 964px) {
+    .umi-scroll-hint {
+      display: block;
+    }
+  }
+  @media (width <= 720px) {
+    .umi-collection-section .umi-aligned-media {
+      width: calc(100% - 32px);
+    }
+  }
+  @media (pointer: coarse) {
+    .umi-take {
+      min-height: 44px;
+    }
+  }
+</style>

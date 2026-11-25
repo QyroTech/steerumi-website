@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="748" viewBox="0 0 560 374" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="title description" fill="none">
+  <title id="title">Stack cubes: repeatability across two SteerUMI runs</title>
+  <desc id="description">Task Progress Score improves over four post-training rounds in both runs. The light-blue band is the range between the runs, not a confidence interval.</desc>
+  <rect x="1" y="1" width="558" height="372" rx="11" fill="#fff" stroke="#dbe4ef" stroke-width="2"/>
+
+  <g font-family="system-ui, sans-serif">
+    <text x="28" y="42" fill="#202936" font-size="26" font-weight="650">Stack cubes</text>
+    <g data-legend="runs" transform="translate(0 -17)" fill="#38465a" font-size="18">
+      <path d="M30 97h27" stroke="#1768c8" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="43.5" cy="97" r="4" fill="#1768c8" stroke="#fff" stroke-width="1.4"/>
+      <text x="66" y="103">Run A</text>
+      <path d="M147 97h27" stroke="#174671" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+      <text x="183" y="103">Run B</text>
+      <rect x="265" y="90" width="26" height="14" rx="3" fill="#94bbea"/>
+      <text x="301" y="103">Two-run range</text>
+    </g>
+
+    <path d="M96 109H531 M96 175H531 M96 241H531" stroke="#e0e7f0" stroke-width="1.5"/>
+    <path d="M96 109V307H531 M118 307v6 M216 307v6 M314 307v6 M412 307v6 M510 307v6" stroke="#9aaabe" stroke-width="1.5"/>
+    <text data-axis-title="tps" transform="translate(28 208) rotate(-90)" fill="#526072" font-size="16" text-anchor="middle">Task Progress Score (TPS, %)</text>
+    <g data-axis="tps" fill="#526072" font-size="19" text-anchor="end" dominant-baseline="middle">
+      <text x="85" y="109">100</text>
+      <text x="85" y="175">80</text>
+      <text x="85" y="241">60</text>
+      <text x="85" y="307">40</text>
+    </g>
+    <g data-axis="round" fill="#526072" font-size="19" text-anchor="middle">
+      <text x="118" y="337">Base</text>
+      <text x="216" y="337">R1</text>
+      <text x="314" y="337">R2</text>
+      <text x="412" y="337">R3</text>
+      <text x="510" y="337">R4</text>
+    </g>
+    <text x="314" y="361" fill="#526072" font-size="17" text-anchor="middle">Post-training round</text>
+  </g>
+
+  <!-- Remapped from the existing pixel-space trace of Figure 4, not new TPS measurements. -->
+  <polygon data-series="two-run-range" points="118,281.47 216,199.84 314,187.18 412,155.85 510,127.39 510,130.56 412,158.44 314,194.67 216,221.68 118,281.47" fill="#94bbea"/>
+  <polyline data-series="run-a" points="118,281.47 216,221.68 314,194.67 412,158.44 510,130.56" stroke="#1768c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline data-series="run-b" points="118,281.47 216,199.84 314,187.18 412,155.85 510,127.39" stroke="#174671" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#1768c8" stroke="#fff" stroke-width="1.4">
+    <circle cx="118" cy="281.47" r="4"/>
+    <circle cx="216" cy="221.68" r="4"/>
+    <circle cx="314" cy="194.67" r="4"/>
+    <circle cx="412" cy="158.44" r="4"/>
+    <circle cx="510" cy="130.56" r="4"/>
+  </g>
+</svg>

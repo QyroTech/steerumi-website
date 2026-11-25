@@ -1,0 +1,34 @@
+---
+import type { Project } from "../data/project";
+import ProjectFigure from "./ProjectFigure.astro";
+
+interface Props {
+  figure: Project["results"]["progressFigure"];
+  meanRelativeGain: string;
+}
+
+const { figure, meanRelativeGain } = Astro.props;
+---
+
+<div class="results-curves">
+  <p class="results-context main-tps-scroll-note">
+    Scroll to see all five tasks.
+  </p>
+  <div
+    class="main-tps-scroll"
+    role="region"
+    aria-label="Task progress curves for all five tasks"
+    tabindex="0"
+  >
+    <ProjectFigure
+      figure={figure}
+      showCaption={false}
+      sizes="(max-width: 944px) 880px, (max-width: 1184px) calc(100vw - 64px), 1120px"
+    />
+  </div>
+  <p class="results-context results-curve-note">
+    Both methods start from the same base policy and use the same number of
+    training demonstrations per round. SteerUMI achieves an average improvement
+    of <strong>{meanRelativeGain}</strong> in final TPS across the five tasks.
+  </p>
+</div>

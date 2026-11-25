@@ -1,0 +1,38 @@
+---
+import type { Project } from "../data/project";
+import ProjectFigure from "./ProjectFigure.astro";
+import { withBase } from "../lib/urls";
+interface Props {
+  teaser: Project["teaser"];
+}
+const { teaser } = Astro.props;
+const hasMedia = teaser.video || teaser.figure?.image;
+---
+
+{
+  hasMedia && (
+    <section
+      id="teaser"
+      class="teaser section-shell opening-figure"
+      aria-label="Project overview media"
+    >
+      {teaser.video ? (
+        <figure>
+          <video
+            class="teaser-media"
+            data-teaser-video
+            src={withBase(teaser.video)}
+            poster={teaser.poster && withBase(teaser.poster)}
+            controls
+            playsinline
+            preload="none"
+            aria-label={teaser.caption ?? "Project overview video"}
+          />
+          {teaser.caption && <figcaption>{teaser.caption}</figcaption>}
+        </figure>
+      ) : (
+        teaser.figure && <ProjectFigure figure={teaser.figure} priority />
+      )}
+    </section>
+  )
+}

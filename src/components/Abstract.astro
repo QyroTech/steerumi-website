@@ -1,0 +1,20 @@
+---
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+const segments = text.split(/(\*\*[^*]+\*\*)/g);
+---
+
+<section id="abstract" class="page-section abstract-section">
+  <div class="section-shell abstract-shell">
+    <h2>Abstract</h2>
+    <p class="abstract-text">
+      {
+        segments.map((segment, index) =>
+          index % 2 === 0 ? segment : <strong>{segment.slice(2, -2)}</strong>,
+        )
+      }
+    </p>
+  </div>
+</section>

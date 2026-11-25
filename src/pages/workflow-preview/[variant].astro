@@ -1,0 +1,107 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import Workflow from "../../components/Workflow.astro";
+import WorkflowAlternative from "../../components/WorkflowAlternative.astro";
+import { project } from "../../data/project";
+import { workflowPreviews } from "../../data/workflow-previews";
+import Layout from "../../layouts/Layout.astro";
+import { withBase } from "../../lib/urls";
+
+export const getStaticPaths = (() =>
+  import.meta.env.DEV
+    ? workflowPreviews.map((option) => ({
+        params: { variant: option.id },
+        props: { option },
+      }))
+    : []) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { option } = Astro.props;
+const previewProject = {
+  ...project,
+  title: `SteerUMI · Section 02 Preview ${option.number}: ${option.label}`,
+  confidential: true,
+};
+---
+
+<Layout project={previewProject}>
+  <header class="preview-header">
+    <div class="section-shell preview-bar">
+      <a class="preview-home" href={withBase("/#workflow")}>← Current page</a>
+      <nav class="preview-options" aria-label="Section 02 layout previews">
+        {
+          workflowPreviews.map(({ id, number, label }) => (
+            <a
+              href={withBase(`workflow-preview/${id}/`)}
+              aria-current={id === option.id ? "page" : undefined}
+            >
+              <span class="preview-number">{number}</span> {label}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
+  </header>
+  <main id="main-content">
+    {
+      option.id === "video-first" ? (
+        <Workflow workflow={project.workflow} />
+      ) : (
+        <WorkflowAlternative variant={option.id} workflow={project.workflow} />
+      )
+    }
+  </main>
+</Layout>
+
+<style>
+  .preview-header {
+    background: var(--page-raised);
+    border-bottom: 1px solid var(--page-line);
+  }
+  .preview-bar,
+  .preview-options,
+  .preview-options a {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .preview-bar {
+    justify-content: space-between;
+    gap: 8px 20px;
+    padding-block: 12px;
+  }
+  .preview-home {
+    color: var(--page-secondary);
+    font-size: 0.84rem;
+  }
+  .preview-options {
+    gap: 6px;
+    font-size: 0.83rem;
+  }
+  .preview-options a {
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--page-line);
+    border-radius: 8px;
+    color: var(--page-secondary);
+  }
+  .preview-options a[aria-current="page"] {
+    border-color: var(--page-accent);
+    color: var(--page-accent);
+    background: var(--page-soft);
+    font-weight: 650;
+  }
+  .preview-number {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 560px) {
+    .preview-options {
+      gap: 4px;
+      font-size: 0.75rem;
+    }
+    .preview-options a {
+      gap: 4px;
+      padding-inline: 7px;
+    }
+  }
+</style>

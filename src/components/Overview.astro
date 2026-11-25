@@ -1,0 +1,38 @@
+---
+import type { Project } from "../data/project";
+import SectionHeading from "./SectionHeading.astro";
+import ProjectFigure from "./ProjectFigure.astro";
+interface Props {
+  overview: Project["overview"];
+  showFigure?: boolean;
+}
+const { overview, showFigure = true } = Astro.props;
+---
+
+<section id="overview" class="page-section">
+  <div class="section-shell">
+    <SectionHeading
+      label="02 / Overview"
+      title={overview.title}
+      intro={overview.intro}
+    />
+    {showFigure && overview.figure && <ProjectFigure figure={overview.figure} />}
+    <ol class="contributions">
+      {
+        overview.contributions.map((item, index) => (
+          <li>
+            <>
+              <span class="contribution-number">0{index + 1}</span>
+              <div>
+                <>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </>
+              </div>
+            </>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

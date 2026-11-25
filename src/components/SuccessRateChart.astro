@@ -1,0 +1,96 @@
+---
+import type { Project } from "../data/project";
+interface Props {
+  rows: Project["results"]["ablations"];
+}
+const { rows } = Astro.props;
+if (
+  rows.some((row) =>
+    [row.startSR, row.afterSR].some(
+      (value) => !Number.isFinite(value) || value < 0 || value > 100,
+    ),
+  )
+) {
+  throw new Error(
+    "AR ablation success rates must be finite percentages between 0 and 100.",
+  );
+}
+const pairs = [...new Set(rows.map((row) => row.task))].flatMap((task) => {
+  const withAR = rows.find((row) => row.task === task && row.withAR);
+  const withoutAR = rows.find((row) => row.task === task && !row.withAR);
+  return withAR && withoutAR ? [{ task, withAR, withoutAR }] : [];
+});
+---
+
+{
+  pairs.length > 0 && (
+    <figure class="success-rate-chart" aria-labelledby="success-rate-title">
+      <div class="rate-chart-heading">
+        <>
+          <h3 id="success-rate-title">AR ablation: success rate</h3>
+          <a href="#ar-ablation-table">View data table ↓</a>
+        </>
+      </div>
+      <ul class="rate-legend" aria-label="Success-rate series">
+        <>
+          <li>
+            <span class="rate-key with-ar" aria-hidden="true" />
+            With AR (ours)
+          </li>
+          <li>
+            <span class="rate-key without-ar" aria-hidden="true" />
+            Without AR
+          </li>
+        </>
+      </ul>
+      {pairs.map((pair) => (
+        <div class="rate-task">
+          <h4>{pair.task}</h4>
+          {[pair.withoutAR, pair.withAR].map((row) => (
+            <div class="rate-row">
+              <div class="rate-label">
+                <span>{row.method}</span>
+                <strong>{row.afterSR.toFixed(1)}%</strong>
+              </div>
+              <div
+                class="rate-track"
+                tabindex="0"
+                role="img"
+                aria-label={`${row.task}, ${row.method}: after success rate ${row.afterSR.toFixed(1)}%, starting success rate ${row.startSR.toFixed(1)}%`}
+              >
+                <span class="rate-grid" aria-hidden="true">
+                  {[0, 25, 50, 75, 100].map((tick) => (
+                    <i style={`left: ${tick}%`} />
+                  ))}
+                </span>
+                <span
+                  class:list={[
+                    "rate-bar",
+                    row.withAR ? "with-ar" : "without-ar",
+                  ]}
+                  style={`width: ${row.afterSR}%`}
+                  aria-hidden="true"
+                />
+                <span class="rate-tooltip" aria-hidden="true">
+                  <strong>{row.afterSR.toFixed(1)}%</strong> after ·{" "}
+                  {row.startSR.toFixed(1)}% start
+                  <br />
+                  {row.task} / {row.method}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+      <div class="rate-axis" aria-hidden="true">
+        {[0, 25, 50, 75, 100].map((tick) => (
+          <span>{tick}%</span>
+        ))}
+      </div>
+      <figcaption>
+        Success rate after one additional post-training round. Both settings
+        start from the same model for each task.
+      </figcaption>
+    </figure>
+  )
+}

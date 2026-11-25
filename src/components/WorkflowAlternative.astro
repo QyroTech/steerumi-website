@@ -1,0 +1,318 @@
+---
+import type { Project } from "../data/project";
+import type { WorkflowPreviewId } from "../data/workflow-previews";
+import { withBase } from "../lib/urls";
+import SectionHeading from "./SectionHeading.astro";
+import VideoGallery from "./VideoGallery.astro";
+
+interface Props {
+  variant: Exclude<WorkflowPreviewId, "video-first">;
+  workflow: Project["workflow"];
+}
+
+const { variant, workflow } = Astro.props;
+const headings = {
+  "efficiency-first": {
+    label: "02 / Faster Policy Iteration",
+    title: "Less collection time per round",
+    intro:
+      "SteerUMI collects corrective demonstrations without robot rollouts and updates the policy in the cloud.",
+  },
+  "pipeline-first": {
+    label: "02 / Automated DAgger Pipeline",
+    title: "From validated data to the next checkpoint",
+    intro:
+      "After each collection round, the cloud processes the uploaded demonstrations, starts training when the data quota is met, and publishes the next collection task after deployment.",
+  },
+};
+
+const pipelineSteps = [
+  { title: "Upload", text: "Send recordings, OOD labels, and the policy version to the cloud." },
+  { title: "Quality check", text: "Automatically clean, annotate, and inspect uploaded demonstrations." },
+  { title: "Reach data quota", text: "Start the update once enough valid OOD episodes are ready." },
+  { title: "Post-train", text: "Mix new corrective segments with historical data and update the policy." },
+  { title: "Deploy & publish", text: "Activate the new cloud policy and release the next collection task." },
+];
+
+---
+
+<section id="workflow" class="page-section workflow-alternative">
+  <div class="section-shell">
+    <SectionHeading {...headings[variant]} />
+
+    {
+      variant === "efficiency-first" && (
+        <div class="alternative-feature">
+          <section class="efficiency-panel" aria-label="Stack-cubes collection-time comparison">
+            <div class="efficiency-claim">
+              <p class="panel-label">Single-unit comparison · Stack cubes</p>
+              <p class="metric-value">33.3%</p>
+              <h3>Less collection time per round</h3>
+            </div>
+            <div class="efficiency-comparison">
+              <dl class="time-bars">
+                <div class="time-row steerumi-time">
+                  <dt>SteerUMI</dt>
+                  <dd>≈100 min</dd>
+                  <div class="time-track" aria-hidden="true"><span></span></div>
+                </div>
+                <div class="time-row robot-time">
+                  <dt>Real-robot HG-DAgger</dt>
+                  <dd>≈150 min</dd>
+                  <div class="time-track" aria-hidden="true"><span></span></div>
+                </div>
+              </dl>
+              <p class="comparison-note">
+                One UMI device vs. one robot; 100 training episodes per round. Times exclude round-start setup.
+              </p>
+            </div>
+          </section>
+          <p class="feature-note">
+            The time-lapse below shows a separate folding task: multiple UMI devices collect in parallel, and automated checks, training, and cloud redeployment connect the rounds.
+            <a href={withBase("/#hg-dagger-comparison")}>See Experiment 3 for the timing comparison.</a>
+          </p>
+        </div>
+      )
+    }
+
+    {
+      variant === "pipeline-first" && (
+        <div class="alternative-feature">
+          <figure class="pipeline-panel">
+            <figcaption class="panel-label">One cloud-side iteration</figcaption>
+            <ol class="pipeline-flow" role="list">
+              {pipelineSteps.map((step, index) => (
+                <li>
+                  <span class="pipeline-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </li>
+              ))}
+            </ol>
+            <p class="pipeline-return"><span aria-hidden="true">↶</span> Next round: collect with the updated policy.</p>
+          </figure>
+          <div class="training-rules">
+            <div class="training-rule">
+              <strong>1:1</strong>
+              <div>
+                <h3>Balance new and historical data</h3>
+                <p>Mix valid OOD episode suffixes equally with initial SFT and earlier-round data.</p>
+              </div>
+            </div>
+            <div class="training-rule">
+              <strong>6 epochs</strong>
+              <div>
+                <h3>Use the final checkpoint</h3>
+                <p>Train for six epochs each round and deploy the final checkpoint for the next round.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    <VideoGallery id="workflow-videos" groups={workflow.videos} />
+  </div>
+</section>
+
+<style>
+  .workflow-alternative {
+    padding-block: clamp(32px, 4.5vw, 68px) clamp(54px, 6vw, 88px);
+  }
+  .workflow-alternative :global(.section-heading h2) {
+    max-width: 1000px;
+  }
+  .workflow-alternative :global(.section-intro) {
+    max-width: 800px;
+  }
+  .workflow-alternative :global(.video-group) {
+    margin-top: 0;
+  }
+  .workflow-alternative :global(.video-caption) {
+    max-width: none;
+  }
+  .alternative-feature {
+    margin-bottom: 38px;
+  }
+  .panel-label {
+    color: var(--page-accent);
+    font-size: 0.76rem;
+    font-weight: 650;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+  }
+  .pipeline-index {
+    display: block;
+    color: var(--page-accent);
+    font-size: 0.76rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    margin-bottom: 5px;
+  }
+  .pipeline-flow h3,
+  .training-rule h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .pipeline-flow p,
+  .training-rule p {
+    margin-top: 6px;
+    color: var(--page-secondary);
+    font-size: 0.87rem;
+    line-height: 1.55;
+  }
+  .efficiency-panel,
+  .pipeline-panel {
+    padding: clamp(16px, 3vw, 30px);
+    border: 1px solid var(--page-line);
+    border-radius: 12px;
+    background: var(--page-soft);
+  }
+  .efficiency-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 22px 32px;
+  }
+  .metric-value {
+    margin-block: 8px 5px;
+    color: var(--page-accent);
+    font-size: clamp(2.9rem, 6vw, 5rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.065em;
+    line-height: 1;
+  }
+  .time-bars {
+    display: grid;
+    gap: 12px;
+  }
+  .time-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 3px 10px;
+    font-size: 0.92rem;
+  }
+  .time-row dd {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+  .steerumi-time dd {
+    color: var(--page-accent);
+  }
+  .time-track {
+    grid-column: 1 / -1;
+    height: 7px;
+    border-radius: 8px;
+    background: var(--page-line);
+  }
+  .time-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+  }
+  .steerumi-time .time-track span {
+    width: calc(100% * 100 / 150);
+    background: var(--page-accent);
+  }
+  .robot-time .time-track span {
+    background: var(--page-note-line);
+  }
+  .comparison-note,
+  .feature-note {
+    margin-top: 12px;
+    color: var(--page-secondary);
+    font-size: 0.89rem;
+    line-height: 1.6;
+  }
+  .comparison-note {
+    font-size: 0.81rem;
+  }
+  .feature-note a {
+    text-decoration: underline;
+  }
+  .workflow-alternative .pipeline-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 20px;
+    margin-top: 12px;
+  }
+  .pipeline-flow li {
+    position: relative;
+    padding: 12px;
+    border: 1px solid var(--page-line);
+    border-radius: 8px;
+    background: var(--page-raised);
+  }
+  .pipeline-flow li:not(:last-child)::after {
+    position: absolute;
+    inset: 50% auto auto calc(100% + 2px);
+    transform: translateY(-50%);
+    content: "→" / "";
+    color: var(--page-accent);
+    line-height: 1;
+  }
+  .pipeline-return {
+    margin-top: 14px;
+    color: var(--page-accent);
+    font-size: 0.87rem;
+    font-weight: 600;
+    text-align: end;
+  }
+  .training-rules {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .training-rule {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--page-line);
+    border-radius: 8px;
+  }
+  .training-rule > strong {
+    color: var(--page-accent);
+    font-size: clamp(1rem, 2.2vw, 1.24rem);
+    font-weight: 700;
+  }
+  @media (max-width: 850px) {
+    .workflow-alternative .pipeline-flow {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 15px;
+    }
+    .pipeline-flow li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 4px 10px;
+    }
+    .pipeline-flow p {
+      grid-column: 2;
+      margin: 0;
+    }
+    .pipeline-flow .pipeline-index {
+      margin: 0;
+    }
+    .pipeline-flow li:not(:last-child)::after {
+      inset: calc(100% + 1px) auto auto 17px;
+      transform: none;
+      content: "↓" / "";
+      font-size: 0.8rem;
+    }
+    .pipeline-return {
+      text-align: start;
+    }
+  }
+  @media (max-width: 620px) {
+    .efficiency-panel,
+    .training-rules {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

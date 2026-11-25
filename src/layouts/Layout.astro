@@ -1,0 +1,42 @@
+---
+import type { Project } from "../data/project";
+import { withBase } from "../lib/urls";
+import ImageLightbox from "../components/ImageLightbox.astro";
+import themeScript from "../scripts/theme.js?raw";
+import "../styles/global.css";
+import "../styles/site.css";
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="device">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{project.title}</title>
+    <meta name="description" content={project.description} />
+    <meta name="generator" content={Astro.generator} />
+    {
+      project.confidential && (
+        <meta name="robots" content="noindex, nofollow, noarchive" />
+      )
+    }
+    <link rel="icon" type="image/svg+xml" href={withBase("favicon.svg")} />
+    <meta name="theme-color" content="#ffffff" />
+    <script is:inline data-theme-script set:html={themeScript} />
+    <meta property="og:title" content={project.title} />
+    <meta property="og:description" content={project.description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body class="project-page">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <slot />
+    <ImageLightbox />
+    <script>
+      import "../scripts/interactions";
+    </script>
+  </body>
+</html>
